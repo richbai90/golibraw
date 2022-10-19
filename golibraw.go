@@ -74,6 +74,22 @@ func ExportEmbeddedJPEG(inputPath string, inputfile os.FileInfo, exportPath stri
 	return outfile, nil
 }
 
+func RawBuffer2Image(buffer []byte) (image.Image, ImgMetadata, error) {
+	t0 := time.Now()
+	lproc := lrInit()
+	count := C.int(len(buffer))
+	cArray := C.malloc(C.size_t(count) * C.size_t(unsafe.Sizeof(uintptr(0))))
+	
+
+	// convert the C array to a Go Array so we can index it
+	a := (*[1<<30 - 1]*C.char)(cArray)
+	for index, value := range buffer {
+		a[index] = C.char(value)
+	}
+
+	C.libraw_open_buffer(lproc, cArray, C.size_t(count))
+}
+
 // Raw2Image creates a Image from raw file
 func Raw2Image(infile string) (image.Image, ImgMetadata, error) {
 	t0 := time.Now()
