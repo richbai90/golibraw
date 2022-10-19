@@ -1,7 +1,7 @@
 package golibraw
 
 // #cgo LDFLAGS: -lraw
-// #include "libraw/libraw.h"
+// #include <libraw/libraw.h>"
 import "C"
 import (
 	"bytes"
