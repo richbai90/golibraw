@@ -2,6 +2,7 @@ package golibraw
 
 // #cgo LDFLAGS: -lraw
 // #include <libraw/libraw.h>"
+// #include <stdlib.h>
 import "C"
 import (
 	"bytes"
@@ -75,29 +76,35 @@ func ExportEmbeddedJPEG(inputPath string, inputfile os.FileInfo, exportPath stri
 }
 
 func RawBuffer2Image(buffer []byte) (image.Image, ImgMetadata, error) {
-	t0 := time.Now()
 	lproc := lrInit()
 	count := C.int(len(buffer))
+	// create a carray
 	cArray := C.malloc(C.size_t(count) * C.size_t(unsafe.Sizeof(uintptr(0))))
 	
 
 	// convert the C array to a Go Array so we can index it
-	a := (*[1<<30 - 1]*C.char)(cArray)
+	a := (*[1<<30 - 1]C.char)(cArray)
 	for index, value := range buffer {
 		a[index] = C.char(value)
 	}
 
 	C.libraw_open_buffer(lproc, cArray, C.size_t(count))
+	// free the memory we are no longer using
+	defer func () { C.free(cArray) }()
+	return processImage(lproc)
+
 }
 
 // Raw2Image creates a Image from raw file
 func Raw2Image(infile string) (image.Image, ImgMetadata, error) {
-	t0 := time.Now()
-
 	librawProcessor := lrInit()
-
 	C.libraw_open_file(librawProcessor, C.CString(infile))
+	return processImage(librawProcessor)
 
+}
+
+func processImage(librawProcessor *C.libraw_data_t) (image.Image, ImgMetadata, error) {
+	t0 := time.Now()
 	ret := C.libraw_unpack(librawProcessor)
 	handleError("unpack", int(ret))
 
